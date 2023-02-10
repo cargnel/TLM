@@ -1,0 +1,115 @@
+<html>
+  <head>
+    
+    <script>
+
+      async function fetchData() {
+        const sheetId = "1kAdyjkiCIi32fzpgnJWOFtAVpRe6UCn-3QbSwYXc2iA"; // the id of the Google Sheet
+        const sheetTab = "515216452"; // the name of the sheet tab you want to fetch data from
+        //const response = await fetch(`https://spreadsheets.google.com/feeds/list/${sheetId}/${sheetTab}/public/values?alt=json`);
+		//https://docs.google.com/spreadsheets/d/1kAdyjkiCIi32fzpgnJWOFtAVpRe6UCn-3QbSwYXc2iA/edit#gid=0
+		//https://docs.google.com/spreadsheets/d/1kAdyjkiCIi32fzpgnJWOFtAVpRe6UCn-3QbSwYXc2iA/edit?usp=sharing
+		//const response = await fetch(`https://cors-anywhere.herokuapp.com/https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing&alt=json`)
+		const response = await fetch(`https://opensheet.elk.sh/${sheetId}/TLM`)
+		
+		const data = await response.json();
+        const MATERIALE = [];
+        const RIEMPIMENTO = [];
+        const CATEGORIA = [];
+        data.forEach(row => {
+			if(row.MATERIALE && row.RIEMPIMENTO){
+				MATERIALE.push(row.MATERIALE);
+				RIEMPIMENTO.push(row.RIEMPIMENTO.replace("%",""));
+				if(row.CATEGORIA){
+					CATEGORIA.push(row.CATEGORIA);
+				}else{
+					//console.log("using "+CATEGORIA[CATEGORIA.length - 1]);
+					CATEGORIA.push(CATEGORIA[CATEGORIA.length - 1]);
+				}
+				console.log(MATERIALE[MATERIALE.length - 1]+"; "+RIEMPIMENTO[RIEMPIMENTO.length - 1]+";"+CATEGORIA[CATEGORIA.length - 1]);				
+			}
+        });
+		//console.log(RIEMPIMENTO);
+		
+		const colors = RIEMPIMENTO.map(percentage => {
+            if (percentage < 25) {
+              return "green";
+            } else if (percentage < 50) {
+              return "yellow";
+            } else if (percentage < 75) {
+              return "orange";
+            } else {
+              return "red";
+            }
+          });
+		
+        const ctx = document.getElementById("myChart").getContext("2d");
+		// Register the plugin to all charts:
+		Chart.register(ChartDataLabels);
+        const myChart = new Chart(ctx, {
+          type: "bar",
+		  data: {
+            labels: MATERIALE,
+            datasets: [{
+				label: "%",
+				data: RIEMPIMENTO,
+				backgroundColor: colors,
+				borderWidth: 1,
+				datalabels: {
+					align: 'center',
+					anchor: 'center'
+				}				
+			}]
+          },
+          options: {
+			indexAxis: 'y',
+            plugins: {
+			  title: {
+				display: true,
+				font: {
+                        size: 25
+                    },
+				text: 'Disponibilità piattaforma'
+			  },
+			  legend: {
+                display: false
+              },
+			  datalabels: {
+				align: 'end',
+				anchor: 'end',
+				color: function(context) {
+				  return "black";
+				},
+				font: function(context) {
+				  var w = context.chart.width;
+				  return {
+					size: w < 512 ? 18 : 16,
+					weight: 'bold',
+				  };
+				},
+				formatter: function(value, context) {
+				  return context.dataset.data[context.dataIndex]+  "%";
+				}
+			  }
+			},
+			// Core options
+				scales: {
+				  x: {
+					display: true,
+					offset: true
+				  },
+				  y: {
+					beginAtZero: true
+				  }
+				}
+			  }
+			});
+      }
+    </script>
+  </head>
+  <body onload="fetchData()">
+    <canvas id="myChart" width="400" height="200"></canvas>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@3.0.0/dist/chart.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+  </body>
+</html>
